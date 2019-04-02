@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+
+<html lang="en-us">
+
+<head>
+    <meta name="viewport" content="initial-scale=1.0">
+    <meta charset="utf-8">
+  <title>Date Night</title>
+
+  <!-- jQuery -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+
+  <!-- Bootstrap CDN-->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+  <link href='https://fonts.googleapis.com/css?family=Cookie' rel='stylesheet' type='text/css'>
+  <link href="https://fonts.googleapis.com/css?family=Satisfy" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Courgette" rel="stylesheet">
+  
+  <link href="https://fonts.googleapis.com/css?family=Lemonada" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css?family=Courgette|Lobster+Two|Merienda|Pattaya" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Courgette|Lobster+Two|Merienda" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Carter+One|Fugaz+One|Lobster|Pacifico" rel="stylesheet">
+  <link async href="https://fonts.googleapis.com/css?family=Cabin%20Condensed" rel="stylesheet" type="text/css"/>
+  <!-- Firebase Reference -->
+  <script src="https://www.gstatic.com/firebasejs/5.9.1/firebase.js"></script>  
+  <script src="https://cdn.jsdelivr.net/momentjs/2.12.0/moment.min.js"></script>
+  <link rel="stylesheet" type="text/css" media="screen" href="assets/style.css" />
+  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyArGspblnhF4-hiENSFuiTXDuoRoxS-by8&libraries=places,geometry"
+  type="text/javascript"></script>
+
+  
+
+</head>
+
+<body>
+  <div class="container" id="firstContainer">
+      <div id="user">
+        
+      </div>
+    <div class="top-tab top-tab-3 tab" id="registerBtn">
+      <div class="top-tab-content" id="registerBtn">Create Account</div>
+    </div>
+    <div class="top-tab top-tab-4 tab"  id="loginBtn">
+      <div class="top-tab-content" id="loginBtn">LogIn</div>
+    </div>
+    <div class="stage">
+        <div class="layer"></div>
+        <div class="layer"></div>
+        <div class="layer"></div>
+        <div class="layer"></div>
+        <div class="layer"></div>
+        <div class="layer"></div>
+        <div class="layer"></div>
+        <div class="layer"></div>
+        <div class="layer"></div>
+        <div class="layer"></div>
+        <div class="layer"></div>
+        <div class="layer"></div>
+        <div class="layer"></div>
+        <div class="layer"></div>
+        <div class="layer"></div>
+        <div class="layer"></div>
+        <div class="layer"></div>
+        <div class="layer"></div>
+        <div class="layer"></div>
+        <div class="layer"></div>
+        <h1 class="hiddenTitle">Dinner and Movie?</h1>
+      </div>
+      <br>
+      <!--Let me save it just in case
+      <div class="modal show" id="loginPg" style="display: block;">
+          <div class="form">
+            <form class="register-form">
+              <input id="txtEmail" type="email" placeholder="Email"/>
+              <input id="txtPassword" type="password" placeholder="password"/>
+              <button>create</button>
+              <p class="message">Already registered? <a href="#">Sign In</a></p>
+            </form>
+            <form class="login-form">
+              <input type="email" placeholder="Email"/>
+              <input type="password" placeholder="password"/>
+              <button id="btnLogin">login</button>
+              <button id="btnLogout">logout</button>
+              <p class="message">Not registered? <button id="btnSignUp">Create an account</button></p>
+            </form>
+          </div>
+        </div>-->
+  <!--REGISTER FORM-->
+
+      <div class="modal show" id="registerPg" style="display: none;">
+        <form class="form">
+          <div class="close"></div>
+          <form class="register-form">
+              <input id="txtEmail-reg" type="email" placeholder="Email"/>
+              <input id="txtPassword-reg" type="password" placeholder="password"/>
+            <button id="btnSignUp">create</button>
+           </form>
+        </form>
+      </div>
+  <!--LOGIN FORM-->
+  
+      <div class="modal show" id="loginPg" style="display: none;">
+        <form class="form">
+          <div class="close"></div>      
+          <form class="login-form">
+              <input id="txtEmail-login" type="email" placeholder="Email"/>
+              <input id="txtPassword-login" type="password" placeholder="password"/>
+              <button id="btnLogin">login</button>
+              
+          </form>
+        </form>
+      </div>
+    </div>
+    <form id="location-form" class="container">
+      
+      <h1 id="header">We are here to help</h1>
+      <div class="form-group" id="problemText">
+        <label for="location-input" id="labelText" class="zipText">What Zip Code are you looking in?</label>
+        <input type="text" class="form-control" id="location-input" placeholder="zipcode (optional)">
+        
+      </div>
+      <div class="form-group">
+        <label for="date-input" id="labelText">When Are You Going?</label>
+        <input  class="form-control" id="date-input" >
+      </div>
+      <div class="form-group">
+        <label for="distance-input" id="labelText">How far are you willing to drive?</label>
+        <input type="text" class="form-control" id="distance-input" placeholder="5 miles (optional)">
+      </div>
+      <button class="panel" id="find-theater" type="submit" value="Movie Search">Movie Search</button>
+      <!-- Hidden until the displaySaved() function can be fixed -->
+      <button class="panel" id="display-saved" type="submit" value="Saved Results" style=display:none>Saved Results</button> 
+    </form>
+    <!-- The Modal -->
+    <div class="modal" id="movieShowtimeModal">
+      <div class="modal-dialog">
+        
+        <div class="modal-content">
+          <!-- Modal Header -->
+          <div class="modal-header">
+            <div id="movieDescrip" class="modal-title"></div>
+            <div type="button" class="cl" data-dismiss="modal">&times;</div>
+          </div>
+          <!-- Modal body -->
+          <div class="modal-body container text-center" id="movieTable"> 
+              <button id="save">Select Restaurant</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="container">
+      <div class="card" id="movieCard" style="display: none;">
+        <!-- We'll be dumping our JSON contents in here -->
+          <div class="card-body row" id="results-view"> 
+          </div>
+        </div>
+      
+      
+    </div>
+    <script src="assets/main.js"></script>
+  </body>
+ </html>
