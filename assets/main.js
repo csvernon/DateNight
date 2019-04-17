@@ -29,12 +29,7 @@ var btnLogin = document.getElementById('btnLogin');
 var btnSignUp = document.getElementById('btnSignUp');
 var btnLogout = document.getElementById('btnLogout');
 var loginBtn = document.getElementById('loginBtn');
-function userlogingDis(){
-$('#registerPg').hide()
-$(".modal-backdrop").remove();
-$('#loginPg').hide()
-$(".modal-backdrop").remove();
-}
+
 // Add login event
 btnLogin.addEventListener('click', e => {
   // Get email and pass
@@ -44,44 +39,134 @@ btnLogin.addEventListener('click', e => {
   var auth = firebase.auth();
   // Sign In
   var promise = auth.signInWithEmailAndPassword(email, pass);
-  promise.catch(e => console.log(e.message));
-  //promise.catch(e => $('#firstContainer').text('<p>'+e.message+'</p>'));
+  if(promise.catch)
+  promise.catch(e => {
+
+      console.log(e.message);
+      if($('#loginPg form').children().length < 5){
+        $('#loginPg form').append(
+          $('<p>').attr({id:'incorrectLogin', style:'color:red'}).text('The username or password is not recognized'),
+          $('<p>').attr({id:'forgotPassword'}).text('Forgot Password?').one('click',showResetPassword)
+        );
+        $('#loginPg input').one('focus', () => {
+          $('#incorrectLogin').remove();
+          $('#forgotPassword').remove();
+        });
+        $('#loginPg input').one('input', () => {
+          $('#incorrectLogin').remove();
+          $('#forgotPassword').remove();
+        });
+      }
+     
+     
+  });
+  else{
+    // cleanDatabase();
+   
+  }  
+
+//promise.catch(e => $('#firstContainer').text('<p>'+e.message+'</p>'));
+  
+   
 });
 
+
+
+function cleanDatabase(cleanEmail){
+  var user = firebase.database().ref('users/' + cleanEmail +'/dates');
+  user.on('value',function(snapshot){
+    if(snapshot.val())
+      $('#display-saved').show();
+  })
+  user.once('value', function (snapshot) {
+  snapshot.forEach((item)=>{
+    console.log(item)
+    console.log(moment(item.showtime,'h:mm a').fromNow().includes('ago'))
+      if(moment(item.showtime,'h:mm a').fromNow().includes('ago')){
+        firebase.database().ref('users/' + cleanEmail +'/dates/'+item.ref_.key).remove();
+      }
+    });
+    if(snapshot.val()){
+      $('#display-saved').show();
+    }
+  });
+}
+
+const sendResetEmail = (e) =>{
+  e.preventDefault();
+  $('resetPassEmailSent').show()
+  let email = $('#txtEmail-reset').val().trim();
+  var auth = firebase.auth();
+  auth.sendPasswordResetEmail(email).then(function() {
+    // Email sent.
+  if(email == ''){
+    $('#resetPassPg form').append($('<p>').attr({id:'incorrectLogin', style:'color:red'}).text('That email is not recognized'));
+  }
+  else{
+    loginRegisterClose();
+    $('#resetPassEmailSent').show();
+    $('#resetPassText').text(`An email to reset your password has been sent to \n${email}`);
+    setTimeout(function(){
+      loginRegisterClose();
+      displayLogIn();
+      $('#txtEmail-login').val(email);
+    },10*1000);
+  }
+  }).catch(function(error) {
+    // An error happened.
+    console.log(error);
+    $('#resetPassPg form').append(
+      $('<p>').attr({id:'incorrectLogin', style:'color:red'}).text('The username is not recognized')
+    );
+    $('#resetPassPg input').one('focus', () => {
+      $('#incorrectLogin').remove();
+    });
+    $('#resetPassPg input').one('input', () => {
+      $('#incorrectLogin').remove();
+    });
+  });
+}
 // Add signup Event
 btnSignUp.addEventListener('click', e => {
   // Get email and pass
-  event.preventDefault();
+  e.preventDefault();
   var email = txtEmailReg.value;
   var cleanEmail = email.replace(/\./g, ','); // Convert email so it can be used in Firebase path
   var pass = txtPasswordReg.value;
   var auth = firebase.auth();
+  let message = (email == '') ? 'Email Address Required' : 'Email Address is already Registered';
   // Sign In
   var promise = auth.createUserWithEmailAndPassword(email, pass);
-  promise.catch(e => console.log(e.message));
-
-  firebase.database().ref('users/' + cleanEmail).set({
-    movie: "",
-    showtime: "",
-    theater: "",
-    restaurant: "",
-    address: "",
-    url: ""
+  promise.catch(e => {
+    console.log(e.message);
+    if($('#registerPg form').children().length < 5){
+      
+      $('#registerPg form').append(
+        $('<p>').attr({id:'incorrectLogin', style:'color:red'}).text(message)
+      );
+      $('#registerPg input').one('focus', () => {
+        $('#incorrectLogin').remove();
+      });
+    }
   });
+    
+
+  
 });
 function logOut(){
   firebase.auth().signOut().then(function() {
     // Sign-out successful.
-    $('#loginBtn').show()
-    $('#registerBtn').show()
-    $('#user').hide()
-    $('#userText').remove()
-    $('#btnLogout').remove()
+    $('#display-saved').hide();
+    $('#loginBtn').show();
+    $('#registerBtn').show();
+    $('#user').hide();
+    $('#userText').remove();
+    $('#btnLogout').remove();
     
-    console.log("user out")
+    console.log("user out");
   }).catch(function(error) {
     // An error happened.
-    console.log('something wrong')
+    console.log('something wrong');
   });
 }
 // Add a realtime Listener
@@ -91,14 +176,16 @@ firebase.auth().onAuthStateChanged(firebaseUser => {
     console.log(firebaseUser.email + " is signed in");
     $('#loginBtn').hide()
     $('#registerBtn').hide()
+    loginRegisterClose();
     //$('#firstContainer').append('<div id="user">');
     $('#user').show()
     $('#user').append('<p id="userText">Hi' + ' ' + firebaseUser.email + '</p>')
     $('#user').append('<button onclick="logOut()" id="btnLogout">LogOut</button>')
    
     //btnLogout.classList.remove('hide');
-
-  } else {
+    cleanDatabase(firebaseUser.email.replace(/\./g, ','));
+  } 
+  else {
     $('#user').hide()
     console.log('not logged in');
     //btnLogout.classList.add('hide');
@@ -140,7 +227,7 @@ function runToday() {
 // }
 
 function runZomato(count,start,locObj,cuisines,$this) {
-    cuisines = (cuisines = "") ? JSON.stringify($this.attr('data-fullList')) : cuisines
+    cuisines = (cuisines == "") ? JSON.stringify($this.attr('data-fullList')) : cuisines
     event.preventDefault();
     // var randNum = Math.floor(Math.random() * 20);
 
@@ -149,13 +236,13 @@ function runZomato(count,start,locObj,cuisines,$this) {
     console.log(latitude)
     console.log(longitude)
     var radius = Math.round(radius*1609.34)
-    var queryURL = "https://developers.zomato.com/api/v2.1/search?" + "count="+count+"&start="+start+"&lat=" + latitude + "&lon=" + longitude + "&radius="+radius+"&cuisines="+cuisines+"&sort=real_distance&order=asc";
+    var queryURL = "https://developers.zomato.com/api/v2.1/search?" + "sort=real_distance&order=asc&count="+count+"&start="+start+"&lat=" + latitude + "&lon=" + longitude + "&radius="+radius+"&cuisines="+cuisines;
     
 
     $.ajax({
     url: queryURL,
     method: "GET",
-    headers: {'user-key' : '930bc5c593df51586e7bff08f89be982'}
+    headers: {'user-key' : '97fb60393f28e5322acdc4d8ff93b8a2'}
     }).then(function(response) {
       
 
@@ -195,13 +282,13 @@ function runZomato(count,start,locObj,cuisines,$this) {
 function offsetZomato(start,$this){
   console.log($this)
   var locObj = JSON.parse($this.attr('data-loc'));
-  var cuisines = $this.attr('data-cuisines)')
+  var cuisines = $this.attr('data-cuisines')
   console.log('locationObject')
   console.log(locObj);
   var count = 20;
   start += count;
   $this.remove()
-  runZomato(count,start,locObj,cuisines);
+  runZomato(count,start,locObj,cuisines,$this);
 }
 function runMovies(){
     clearTimeout(addMovies);
@@ -232,27 +319,12 @@ function runMovies(){
     var showtimesUrl = baseUrl + '/movies/showings';
     var zipCode = $("#location-input").val();
     var zipTest = /^\b\d{5}(-\d{4})?\b$/.test(zipCode)
-    if (!pos&&!zipTest){
-      if ($('#location-input').val() != ''){
-        displayMovieTable();
-        $('#results-view').append($('<h3>').attr({id: 'zipError', style: 'color: red; margin: auto; display:block',class: 'text-center'}).text('Zip Code Invalid'));
-        $('#location-input').one('focus', function(){
-          $('#zipError').remove();
-          $('#movieCard').attr('style','display:none');
-        })
-      }
-      $("#location-input").addClass('input').attr('placeholder','zipcode (required)').one('focus',function(){
-        $(this).removeClass('input');
-        $('#zipError').remove();
-
-      });
-      $('#find-theater').one('click', function(){
-        $("#location-input").removeClass('input')
-
-      })
-      return;
-    }
-    if(!pos){
+    // zipTest = (!zipTest && zipCode == '') ? true : false;
+    if(!pos && zipCode == '')
+      return zipError();
+    if (!zipTest && zipCode != '')
+      return zipError();
+    if(!pos || zipTest){
       $.ajax({
         url: 'https://maps.googleapis.com/maps/api/geocode/json?components=postal_code:'+zipCode+'&key=AIzaSyArGspblnhF4-hiENSFuiTXDuoRoxS-by8',
         method:"GET"
@@ -298,6 +370,27 @@ function runMovies(){
       });
     }
 };
+
+function zipError(){
+  displayMovieTable();
+  $('#results-view').append($('<h3>').attr({id: 'zipError', style: 'color: red; margin: auto; display:block',class: 'text-center'}).text('Zip Code Invalid'));
+  $('#location-input').one('focus', function(){
+    $('#zipError').remove();
+    $('#movieCard').attr('style','display:none');
+  })
+// }
+  $("#location-input").addClass('input').attr('placeholder','zipcode (required)').one('focus',function(){
+  $(this).removeClass('input');
+  $('#zipError').remove();
+  $('#results-view').empty()
+
+  });
+  $('#find-theater').one('click', function(){
+  $("#location-input").removeClass('input')
+  $('#results-view').empty()
+
+  })
+}
 
 function dataHandler(data) {
   displayMovieTable();
@@ -359,11 +452,11 @@ function dataHandler(data) {
           tile.append($('<h6>').attr({class:'movie-title'}).text(resultsObj[key].title))
         $("#results-view").append(tile);
         i++;
-        if (i <Object.keys(resultsObj).length)
+        if (i < Object.keys(resultsObj).length)
           loopObj();
       },750)
     } 
-  },750)
+  },1000)
 
 };
     
@@ -378,7 +471,7 @@ $(document).ready(function() {
 })
 
 function fillModal(){
-  $("body").css("cursor", "progress")
+  $("*").css("cursor", "progress")
   var lettersU = ['&#9398;','&#9399;','&#9400;','&#9401;','&#9402;','&#9403;','&#9404;','&#9405;','&#9406','&#9407','&#9408','&#9409','&#9410','&#9411','&#9412','&#9413','&#9414','&#9415','&#9416']
   var letters = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S',]
   var labelIndex = 0
@@ -387,8 +480,8 @@ function fillModal(){
   console.log(data);
   var resultsSearchDay = moment(data.showtimes[0].dateTime, 'YYYY-MM-DDThh:mm').format('dddd, MMMM Do YYYY');
   $('#movieTable').empty();
-  $('#movieDescrip').empty().append($('<h3>').text(data.title), $('<p>').text(data.longDescription));
-  var row1 = $('<div>').addClass('row text-center').append($('<h6>').text('Showtimes for ' + resultsSearchDay), $('<br><br>'));
+  $('#movieDescrip').empty().append($('<h1>').text(data.title), $('<p>').text(data.longDescription));
+  var row1 = $('<div>').addClass('row text-center').append($('<h4>').text('Showtimes for ' + resultsSearchDay), $('<br><br>'));
   var row2 = $('<div>').addClass('row');
   //create list of theaters showing the selected movie
   for (var i=0;i<data.showtimes.length;i++){
@@ -459,7 +552,7 @@ function fillModal(){
           var id = "#id"+theaters.indexOf(data.showtimes[x].theatre.name)
           $(id).append($('<tr>').append($('<td>').append($('<div>').text(displayDate).attr({class:'showtime', 'data-link':data.showtimes[x].ticketURI, 'data-loc': $(id).attr('data-loc'), 'data-time':displayDate, 'data-title':data.title, 'data-theater':data.showtimes[x].theatre.name}))))
         }
-        $("body").css("cursor", "default") 
+        $("*").css("cursor", "default") 
         }  
       } 
       else if (i< theaters.length-1){
@@ -472,7 +565,7 @@ function fillModal(){
           var id = "#id"+theaters.indexOf(data.showtimes[x].theatre.name)
           $(id).append($('<tr>').append($('<td>').append($('<div>').text(displayDate).attr({class:'showtime', 'data-link':data.showtimes[x].ticketURI, 'data-loc': $(id).attr('data-loc'), 'data-time':displayDate, 'data-title':data.title, 'data-theater':data.showtimes[x].theatre.name}))))
         }
-        $("body").css("cursor", "default") 
+        $("*").css("cursor", "default") 
         }  
     });
     
@@ -521,11 +614,15 @@ function fillModal(){
 
 
 function selectShowtime() {
-  $("body").css("cursor", "default") 
+  $("*").css("cursor", "default") 
   var $movieTable = $('#movieTable');
   var $this = $(this)
   console.log($this.attr('data-loc'))
   var $movieDescrip = $('#movieDescrip');
+  if($this.attr('data-link')){
+    var tickets = $('<a>').attr({href:$this.attr('data-link'),target:'_blank'}).append($('<div>').addClass('select-button').text('Check Movie Tickets'))
+    var linkMessage = $('<small>').text('* We will also make the link available for you to get movie tickets after you search restaurants *')
+  };
   $movieDescrip.empty().append(
     $('<h4>').html('<strong>"'+$this.attr('data-title')+'"</strong> playing at <strong>'+$this.attr('data-time')+"</strong> "+$this.attr('data-theater')),
     $('<br>'),
@@ -538,11 +635,10 @@ function selectShowtime() {
       'data-time' : $this.attr('data-time'),
       'data-theater' : $this.attr('data-theater'),
       'data-link': $this.attr('data-link')
-    }).text('Search Restaurants'),
-    $('<a>').attr({href:$this.attr('data-link'),target:'_blank'}).append($('<div>').addClass('select-button').text('Get Movie Ticket Now'))
-    
-    );
-  $movieTable.empty().append($('<small>').text('* We will also make the link available for you to get movie tickets after you search restaurants *'))
+    }).text('Search Restaurants'), 
+    tickets
+  );
+  $movieTable.empty().append(linkMessage)
 
 
 }
@@ -582,7 +678,7 @@ function findRestaurantcuisines(){
         
 
       }).text('Find Restaurants').appendTo($('#movieTable'))
-      console.log(cuisinesArray)
+      console.log($('#find-restaurant').attr('data-fullList'))
     })
   
 }
@@ -709,27 +805,30 @@ function displayRegisterForm() {
 function displayMovieTable() {
   document.getElementById('movieCard').style.display = 'block';
 }
-function loginRegisterVisibility() {
-  if (('loginPg').display = 'block') {
-    ('registerPg').display = 'none'
-  }
-}
+
 function loginRegisterClose() {
   document.getElementById('loginPg').style.display = "none";
   document.getElementById('registerPg').style.display = "none";
+  $('#resetPassPg').hide();
+  $('.modal-backdrop').hide();
+  $('#resetPassEmailSent').hide()
+  $('#incorrectLogin').remove();
+  $('#forgotPassword').remove();
 }
-function registerLoginVisibility() {
-  if (('registerPg').display = 'block') {
-    ('loginPg').display = 'none';
-  }
+
+function showResetPassword(){
+  loginRegisterClose();
+  $('#resetPassPg').show();
+  $('<div class="modal-backdrop"></div>').appendTo(document.body);
+
 }
-function signIna() {
-  document.getElementById('loginPg').style.display = 'block';
-}
+
 
 //var nameR = $('#selectRestaurantBtn').val()
 //var nameRs = $('#movieDescrip').val()
 function userResult() {
+  
+
   var $this = $(this)
   console.log($this)
   console.log($this.attr('data-title'))
@@ -744,15 +843,16 @@ function userResult() {
   $('<div>').addClass('resText').html('The showtime is : <strong>' + $this.attr('data-time')+'</strong>'),
   $('<div>').addClass('resText').html('Playing at : <strong>' + $this.attr('data-theater')+'</strong>'),
   $('<div>').addClass('resText').html('Your restaurant is : <strong>' + restData.name+'</strong>'),
-  $('<div>').addClass('resText').html('Located at : <strong>' + restData.location.address+'</strong>'),
-  //$('<a>').attr({href: $this.attr('data-link'),target: '_blank'}).append($('<button>').attr({href: $this.attr('data-link')}).text('Get Reservations')),
-  $('<button>').attr({id: "saveResult"}).text('Save my Date Info').attr('data-dismiss', 'modal')
-
-
-  )
+  $('<div>').addClass('resText').html('Located at : <strong>' + restData.location.address+'</strong>')
+  );
+  if($this.attr('data-link'))
+    $movieTable.append($('<a>').attr({href: $this.attr('data-link'),target: '_blank'}).append($('<button>').attr({href: $this.attr('data-link'),id: 'getRes'}).text('Get Reservations')));
+  $movieTable.append($('<button>').attr({id: "saveResult"}).text('Save my Date Info'));
+  console.log(!firebase.auth().currentUser)
+  if(!firebase.auth().currentUser)
+    $('#saveResult').remove();
 
   $("#saveResult").on("click", function (event) {
-    event.preventDefault();
 
     function writeUserData() {
 
@@ -765,52 +865,67 @@ function userResult() {
       var saveRestAddress = restData.location.address;
       var saveURL = $this.attr('data-link');
 
-      firebase.database().ref('users/' + cleanEmail).set({
+      firebase.database().ref('users/' + cleanEmail +'/dates').push().set(JSON.stringify({
         movie: saveMovie,
         showtime: saveShowTime,
         theater: saveTheater,
         restaurant: saveRestaurant,
         address: saveRestAddress,
         url: saveURL
-      });
+      }));
     }
-
+    
     writeUserData()
+    displaySaved();
+    $('#movieCard').attr('style','display: none');
 
 
   });
     
   }
 
-  function displaySaved() {
 
+  function displaySaved(e) {
+    if(e)
+      e.preventDefault();
     var email = firebase.auth().currentUser.email;
     var cleanEmail = email.replace(/\./g, ',');
-    var user = firebase.database().ref('users/' + cleanEmail);
+    var user = firebase.database().ref('users/' + cleanEmail +'/dates');
 
-
-    user.on('value', function (snapshot) {
-        console.log(snapshot.val());
-
-        var saveMovie = snapshot.val().movie;
-        var saveShowTime = snapshot.val().showtime;
-        var saveTheater = snapshot.val().theater;
-        var saveRestaurant = snapshot.val().restaurant;
-        var saveRestAddress = snapshot.val().address;
-        var saveUrl = snapshot.val().url;
-
-        var $movieTable = $('#movieTable');
-        var $movieDesc = $('#movieDescrip').empty().append($('<h1>').text('Your Choice:'));
+    
+    user.once('value', function (snapshot) {
+      var $movieTable = $('#movieTable');
+        $('#movieDescrip').empty().append($('<h1>').text('Saved Results:'));
         $movieTable.empty()
         
-        $('#movieTable').empty().attr('data-toggle', 'modal').append(
+      snapshot.forEach(item =>{
+        console.log(item)
+        let object = JSON.parse(snapshot.val()[item.key]);
+        console.log(object)
+        var saveMovie = object.movie;
+        var saveShowTime = object.showtime;
+        var saveTheater = object.theater;
+        var saveRestaurant = object.restaurant;
+        var saveRestAddress = object.address;
+        var saveUrl = object.url;
+        var dayofMovie = moment(saveShowTime, 'h:mm a').format('dddd MMMM Do')
+       
+        let block = $('<div>').append(
 
         $('<div>').addClass('resText').html('Your movie is : <strong>' + saveMovie + '</strong>'),
-        $('<div>').addClass('resText').html('The showtime is : <strong>' + saveShowTime + '</strong>'),
+        $('<div>').addClass('resText').html('The showtime is : <strong>' + saveShowTime +" " + dayofMovie + '</strong>'),
         $('<div>').addClass('resText').html('Playing at : <strong>' + saveTheater + '</strong>'),
         $('<div>').addClass('resText').html('Your restaurant is : <strong>' + saveRestaurant + '</strong>'),
         $('<div>').addClass('resText').html('Located at : <strong>' + saveRestAddress + '</strong>'),
-        $('<a>').attr({ href: saveUrl, target: '_blank' }).append($('<button>').attr({ href: (saveUrl) }).text('Get Reservations')));
+        
+        );
+        if(saveUrl != undefined || saveUrl != '')
+          block.append($('<a>').attr({ href: saveUrl, target: '_blank' }).append($('<button>').attr({ href: (saveUrl) }).text('Get Reservations')),$('<hr>').attr('style','background: aliceblue'));
+        else
+          block.append($('<hr>').attr('style','background: aliceblue'));
+        $movieTable.prepend(block)
+      })
+
     });
 };
 
@@ -818,14 +933,21 @@ function userResult() {
 
 function getNavigatorLocation(){
   if (navigator.geolocation) {
+    $("*").css("cursor", "progress")
+
     navigator.geolocation.getCurrentPosition(function(position) {
+      $("*").css("cursor", "default")
+      console.log(position)
       pos = {
         lat: position.coords.latitude,
         lng: position.coords.longitude
       };
-    },function(position){
-      
-      if (position.code == 2){
+    
+      $("#location-input").attr('placeholder','zip code (optional)')
+      }
+      ,function(error){
+        $("*").css("cursor", "default")
+        if (error.code == 2){
         $('#movieCard').attr({style:'display:block'})
         $('#results-view').append(
           $('<h3>').attr({class:'text-center locError',style:'color:red'}).text('There was an error retrieving your current location'),
@@ -836,19 +958,24 @@ function getNavigatorLocation(){
           $('#movieCard').attr({style:'display: none'});
           $('.locError').remove();
         })
-      }  
-      $("#location-input").attr('placeholder','zip code (required)')
-
-    })
+      }
+      if(error.code == error.PERMISSION_DENIED)
+        $("#location-input").attr('placeholder','zip code (required)')  
+      
    
+    })
   }
   else{
     $("#location-input").attr('placeholder','zip code (required)')
+    $("*").css("cursor", "default")
+
   }
+    
+  
 
 }
 
-loginRegisterVisibility()
+
 
 var map,infoWindow;
 function initMap() {
@@ -884,12 +1011,11 @@ $(document).on('click', '#moreRestaurants',function(){
   var start = JSON.parse($(this).attr('data-start'));
   console.log('START')
   console.log(start)
-  offsetZomato(start,$this)});
-  $(document).on('click', '.close', closeBackDrop)
-$(document).on('click', '#btnLogin', userlogingDis)
-$(document).on('click', '#btnSignUp', userlogingDis)
+  offsetZomato(start,$this)
+});
+$(document).on('click', '.close', closeBackDrop)
+$(document).on('click', '#btnPasswordReset', sendResetEmail)
 $(document).on('click', '#selectRestaurantBtn',userResult);
-$(document).on('click', '#signInA', signIna);
 $(document).on('click', '.restaurant', selectRestaurant);
 $(document).on('click', '.showtime', selectShowtime); 
 $(document).on('click', '.close', loginRegisterClose)

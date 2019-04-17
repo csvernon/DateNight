@@ -1,24 +1,40 @@
-# What movies are playing near me?
-    - zipcode - 
-    - radius, if i don't default 25 miles
-    - date of movie, if i don't default is today
+# Date Night
 
-# display all movies within radius
-    -when i select a movie it will bring up theaters and showtimes in a modal also map?
-    -i can close the modal or I can select my showtime
 
-# once I select a showtime the  movies near me results go away
-# my selected movie and showtime will be displayed at the top of the screen
-    - ask if i want to search for a restaurant
-        - if yes then restaurants will be displayed
-            -see Restaurant Search Displayed
-        - if no then results screen with my movie and showtime is displayed 
-            -link to reservation
-            -message explaing that we saved their info
-# restraunt search displayed
-    - ul of restaurant names
-        - restaurant details
-# once I select a restaurant
-    -results screen with movie, theater, showtime, and restaurant 
-    -links to get movie tickets and restaurant reservation
-    -message explaining that we will save the info until after that date
+## UNC Coding Bootcamp Group Project #1
+
+
+
+**[Click here to open the site](https://dscarlin.github.io/group-project-1/)**.
+
+
+### Team Members
+
+* [David Carlin](https://github.com/dscarlin)
+* [Yevheniia Dilekoglu](https://github.com/yevheniia01)
+* [Chase Vernon](https://github.com/csvernon)
+* [Bryant Coggins](https://github.com/bcoggins78)
+
+Have you ever needed help planning a night out with your significant other?  Well this site will help!  With this app you can search for movies near your location or you can specify a zip code. Based on how far you’re willing to drive, the app will show what movies are playing, at what theater, and the show times. Once you’ve made your choices, you can go ahead and buy your tickets.  If you also want a bite to eat, you can search for a restaurant as well. Just tell the app what food you’re in the mood for and it will give you a list of restaurants close to the theater.  That way you don’t need to drive across town, get stuck in traffic, and be late for the movie!
+
+## Technologies Used:
+
+* HTML5
+* CSS3
+* Bootstrap
+* Javascript
+* JQuery
+* Ajax
+* moment.js
+* Firebase
+
+## APIs Used:
+
+* Zomato
+* OMDB
+* Google Maps
+* Gracenote
+
+
+
+![Date Night](/assets/images/screenshot.jpg)
